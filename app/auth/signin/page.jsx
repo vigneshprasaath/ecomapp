@@ -19,30 +19,29 @@ import {
   handleCredentialsSignin,
   handleGithubSignin,
 } from "@/app/actions/authActions";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import ErrorMessage from "@/components/error-message";
 import { Button } from "@/components/ui/button";
 
-import { useRouter, useSearchParams } from "next/navigation";
-
-function ErrorHandler() {
-  const params = useSearchParams();
-  const error = params.get("error");
-
-  if (error === "OAuthAccountNotLinked") {
-    return "Please use your email and password to sign in.";
-  } else if (error) {
-    return "An unexpected error occurred. Please try again.";
-  }
-  return "";
-}
+import { useRouter } from "next/navigation";
 
 export default function SignIn() {
   const router = useRouter();
   const [globalError, setGlobalError] = useState("");
 
   useEffect(() => {
-    setGlobalError(ErrorHandler());
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+
+    if (error) {
+      setGlobalError(
+        error === "OAuthAccountNotLinked"
+          ? "Please use your email and password to sign in."
+          : "An unexpected error occurred. Please try again."
+      );
+    }
+
+    // Replace the URL to remove the error query parameter
     router.replace("/auth/signin");
   }, [router]);
 
@@ -74,9 +73,7 @@ export default function SignIn() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Suspense fallback={null}>
-            {globalError && <ErrorMessage error={globalError} />}
-          </Suspense>
+          {globalError && <ErrorMessage error={globalError} />}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FormField
@@ -116,7 +113,6 @@ export default function SignIn() {
                 )}
               />
 
-              {/* Submit button will go here */}
               <LoadingButton pending={form.formState.isSubmitting}>
                 Sign in
               </LoadingButton>
