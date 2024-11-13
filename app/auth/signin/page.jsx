@@ -19,31 +19,32 @@ import {
   handleCredentialsSignin,
   handleGithubSignin,
 } from "@/app/actions/authActions";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import ErrorMessage from "@/components/error-message";
 import { Button } from "@/components/ui/button";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function SignIn() {
+function ErrorHandler() {
   const params = useSearchParams();
   const error = params.get("error");
-  const router = useRouter();
 
+  if (error === "OAuthAccountNotLinked") {
+    return "Please use your email and password to sign in.";
+  } else if (error) {
+    return "An unexpected error occurred. Please try again.";
+  }
+  return "";
+}
+
+export default function SignIn() {
+  const router = useRouter();
   const [globalError, setGlobalError] = useState("");
 
   useEffect(() => {
-    if (error) {
-      switch (error) {
-        case "OAuthAccountNotLinked":
-          setGlobalError("Please use your email and password to sign in.");
-          break;
-        default:
-          setGlobalError("An unexpected error occurred. Please try again.");
-      }
-    }
+    setGlobalError(ErrorHandler());
     router.replace("/auth/signin");
-  }, [error, router]);
+  }, [router]);
 
   const form = useForm({
     resolver: zodResolver(signInSchema),
@@ -73,7 +74,9 @@ export default function SignIn() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {globalError && <ErrorMessage error={globalError} />}
+          <Suspense fallback={null}>
+            {globalError && <ErrorMessage error={globalError} />}
+          </Suspense>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FormField
